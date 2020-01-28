@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 为这个mapper指定一个唯一的namespace，namespace的值习惯上设置成包名+sql映射文件名，这样就能够保证namespace的值是唯一的
+	例如namespace="com.szh.mapper.personMapper"就是com.szh.mapper(包名)+personMapper(personMapper.xml文件去除后缀) -->
+<mapper namespace="com.fh.mapper.OrderMapper">
+    <insert id="addOrderItemList" parameterType="java.util.List">
+        INSERT INTO t_order_item (userId, orderId,RealName,idCard,price)
+        VALUES
+
+
+        <foreach collection="list" item="orderItem" separator=",">
+            (#{orderItem.userid}, #{orderItem.orderid},
+            #{orderItem.realname}, #{orderItem.idcard},#{orderItem.price}, )
+        </foreach>
+    </insert>
+
+    <insert id="addOrder" parameterType="order">
+        insert into  t_order5  (id, userId, status, createTime,  totalPrice, payType)
+        VALUES (#{id}, #{userId}, #{status},
+         #{createTime},
+          #{totalPrice}, #{payType})
+    </insert>
+
+</mapper>

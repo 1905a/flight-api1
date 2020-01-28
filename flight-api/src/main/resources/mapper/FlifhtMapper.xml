@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 为这个mapper指定一个唯一的namespace，namespace的值习惯上设置成包名+sql映射文件名，这样就能够保证namespace的值是唯一的
+	例如namespace="com.szh.mapper.personMapper"就是com.szh.mapper(包名)+personMapper(personMapper.xml文件去除后缀) -->
+<mapper namespace="com.fh.mapper.FlightMapper">
+
+    <sql id="whereSql">
+
+        <where>
+
+            <if test="flightName != null and flightName != ''">
+                and qqq.name like concat('%',#{flightName},'%')
+            </if>
+
+            <if test="hasTicket == 1">
+                <![CDATA[
+                and qqq.totalCount > 0
+                ]]>
+            </if>
+            <if test="hasTicket == 2">
+                <![CDATA[
+                 and qqq.totalCount <= 0
+                ]]>
+
+            </if>
+        </where>
+
+
+    </sql>
+
+
+    <select id="selectCount" parameterType="flightQuery" resultType="long">
+        select count(*) from (select  tf.id,concat(tf.name,concat(tpt.name,concat(tpt.type))) name,
+				concat(DATE_FORMAT(tf.startTime,'%H:%i'),concat(a1.name,a.name)) startDate,
+				concat(DATE_FORMAT(tf.endTime,'%H:%i'),concat(a3.name,a2.name)) endDate
+
+				from flight tf
+                left join flight_plane_type tpt on tf.typeId=tpt.id
+                left join flight_area a on tf.startTerminalId=a.id
+				left join flight_area a1 on a.pid=a1.id
+				left join flight_area a2 on tf.endTerminalId=a2.id
+				left join flight_area a3 on a2.pid=a3.id
+				left join flight_area a4 on a3.pid=a4.id
+        left join flight_ticket tft on tft.flightId=tf.id
+
+        group by name) qqq
+        <include refid="whereSql"></include>
+    </select>
+
+    <select id="selectFlightList" parameterType="flightQuery" resultType="flight">
+       select * from  (select tf.id,concat(tf.name,tpt.name,(case tpt.type when 1 then '(小型)'when 2 then '(中型)'
+            when 3 then '(大型)' else 'null' end)) name,
+				concat(DATE_FORMAT(tf.startTime,'%H:%i'),concat(a1.name,a.name)) startDate,
+				concat(DATE_FORMAT(tf.endTime,'%H:%i'),concat(a4.name,a3.name,a2.name)) endDate,
+				sum(tft.totalCount) totalCount,
+				min(tft.price) price
+				from flight tf
+                left join flight_plane_type tpt on tf.typeId=tpt.id
+                left join flight_area a on tf.startTerminalId=a.id
+				left join flight_area a1 on a.pid=a1.id
+				left join flight_area a2 on tf.endTerminalId=a2.id
+				left join flight_area a3 on a2.pid=a3.id
+				left join flight_area a4 on a3.pid=a4.id
+        left join flight_ticket tft on tft.flightId=tf.id
+        group by name) qqq
+        <include refid="whereSql"></include>
+        limit #{start},#{length}
+
+    </select>
+
+
+    <select id="selectFlightType" resultType="planeType">
+        select * from flight_plane_type
+    </select>
+
+
+    <select id="selectBeginArea" resultType="area">
+        select * from flight_area where pid = 0
+    </select>
+
+
+    <insert id="addFlight" parameterType="flight" useGeneratedKeys="true" keyProperty="id">
+        insert into flight (name,typeid,startTime,endTime,startTerminalId,endTerminalId)
+        values(#{name},#{typeTd},#{startTime},
+              #{endTime},#{startTerminalId},#{endTerminalId})
+    </insert>
+
+
+    <insert id="addFlightTicket" parameterType="flightTicket">
+        insert into flight_ticket (flightId,type,totalCount,price)
+          values( #{flightId},#{type},#{totalCount},#{totalPrice})
+    </insert>
+
+
+
+    <select id="selectFlightById" parameterType="int" resultType="flight">
+        select * from  (select tf.id,concat(tf.name,tpt.name,(case tpt.type when 1 then '(小型)'when 2 then '(中型)'
+        when 3 then '(大型)' else 'null' end)) name,
+        concat(DATE_FORMAT(tf.startTime,'%H:%i'),concat(a1.name,a.name)) startDate,
+        concat(DATE_FORMAT(tf.endTime,'%H:%i'),concat(a4.name,a3.name,a2.name)) endDate,
+        sum(tft.totalCount) totalCount,
+        min(tft.price) price
+        from flight tf
+        left join flight_plane_type tpt on tf.typeId=tpt.id
+        left join flight_area a on tf.startTerminalId=a.id
+        left join flight_area a1 on a.pid=a1.id
+        left join flight_area a2 on tf.endTerminalId=a2.id
+        left join flight_area a3 on a2.pid=a3.id
+        left join flight_area a4 on a3.pid=a4.id
+        left join flight_ticket tft on tft.flightId=tf.id
+        group by name) qqq
+       where id = #{id}
+
+    </select>
+</mapper>

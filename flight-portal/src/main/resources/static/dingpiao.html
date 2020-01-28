@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<link href="css/bootstrap.min.css" rel="stylesheet"/>
+<script src="js/jquery-3.3.1.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<!-- 引入DataTables的css文件 -->
+<link href="DataTables/css/jquery.dataTables.min.css" rel="stylesheet" />
+<script src="DataTables/js/jquery.dataTables.min.js"></script>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="updatediv">
+    <form class="form-horizontal" id="updateform">
+        <input type="hidden" id="updateId">
+        <div class="form-group">
+            <div class="col-sm-4"></div>
+            <div  class="col-sm-4"><b><font size="5">航班信息</font></b></div>
+        </div>
+        <div class="form-group">
+            <label  class="col-sm-4 control-label">航班：</label>
+            <div class="col-sm-8" id="planename">
+
+            </div>
+        </div>
+        <div class="form-group">
+            <label  class="col-sm-4 control-label">起飞时间：</label>
+            <div class="col-sm-8" id="starttimestr">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label  class="col-sm-4 control-label">到达时间：</label>
+            <div class="col-sm-8" id="endtimestr">
+            </div>
+        </div>
+        <div class="form-group" id="updatejobdiv">
+            <label  class="col-sm-4 control-label">乘机人：</label>
+
+            <div id="abc">
+                <div class="col-sm-8" id="messageDiv">
+                    票型<select id="TicketType" onchange="updatePrice(this)">
+                            <option value="-1">请选择</option>
+                            <option value="1">头等舱</option>
+                            <option value="2">经济舱</option>
+                        </select>
+                    价格<input type="text" id="price" readonly size="5">
+                    乘机人 <input type="text" id="realName" size="10">
+                    身份证<input type="text" id="idCard" onblur="jisuan()">
+                   <!-- <button type="button" onclick="addMessage()">+</button>-->
+                </div>
+            </div>
+
+
+        </div>
+        <div class="form-group">
+            <center>总人数：<span id="person"></span><!--,总票价：<span id="totalprice"></span>--></center>
+        </div>
+        <div style="margin-left:600px">
+            <button type="button" onclick="orderItem()" class="btn btn-danger">
+                <span class="glyphicon glyphicon-plus"></span>去结算
+            </button>
+        </div>
+    </form>
+
+</div>
+
+</body>
+
+<script>
+
+    $(function(){
+
+       var a =GetQueryString("id");
+        selectFlight(a);
+    })
+
+
+    function GetQueryString(name){
+
+        var reg = new RegExp("(^|&)"+ name +"=([^&]*)(&|$)");
+
+        var r = window.location.search.substr(1).match(reg);
+
+        if(r!=null)return  unescape(r[2]); return null;
+
+    }
+
+
+    var airplane;
+    function selectFlight(id){
+
+        alert(id)
+        $.ajax({
+            dataType:"json",
+            url:"http://localhost:8081/DingPiaoController/getPiao",
+            type:"post",
+            data:{"id":id},
+            success:function(data){
+                airplane=data.data;
+                $("#planename").html(airplane.name);
+                $("#starttimestr").html(airplane.startDate);
+                $("#endtimestr").html(airplane.endDate);
+                $("#updateId").val(airplane.id);
+
+            },
+            error:function(){
+                alert("出错!!!")
+            },
+        })
+    }
+
+    //查询这个飞机所有的座位
+    function updatePrice(obj){
+        var selectId = obj.value;
+
+        if(selectId != -1){
+
+            var id = $("#updateId").val();
+            $.ajax({
+                url:"http://localhost:8081/AreaController/selectFlightType",
+                type:"post",
+                dataType:"json",
+                data:{id:id},
+                success:function(data){
+                    debugger
+                    if(data.length > 0){
+                        for (var i = 0; i < data.length; i++) {
+                            if(data[i].type==selectId){
+                                $("#price").val(data[i].price);
+                            }
+                        }
+                    }
+                },
+                error:function(){
+                    alert("查询类型失败，请联系管理员！");
+                }
+            });
+
+        }else{
+            $("#price").val(null);
+        }
+
+
+    }
+
+
+    //添加旅客信息
+    var count = 0
+    function addMessage(){
+        count ++
+        if(count < 3){
+            var messageDivHTML = $("#messageDiv").html();
+            $("#abc").append(messageDivHTML);
+        }else{
+            alert("最多两位旅客")
+        }
+
+    }
+
+
+
+
+    //jiesuan
+    function jisuan(){
+        var ticketType = $("#TicketType").val();
+        var price = $("#price").val();
+        var realName = $("#realName").val();
+        var idCard = $("#idCard").val();
+
+        $.ajax({
+            url:"http://localhost:8081/CartController/addMessage",
+            type:"post",
+            dataType:"json",
+            data:{ticketType:ticketType,price:price,realName:realName,idCard:idCard},
+            success:function(data){
+
+            },
+            error:function(){
+                alert("查询类型失败，请联系管理员！");
+            }
+        });
+
+    }
+
+
+    function orderItem(){
+        $.ajax({
+            url:"http://localhost:8081/OrderController/submitOrder",
+            dataType:"json",
+            success: function (result) {
+                if (result.status == 200) {
+                    if(result.data != null && result.data.length > 0){
+
+                        location.href = "pay.html";
+                    }else{
+                        location.href = "pay.html";
+                    }
+                }
+            }
+        });
+    }
+
+
+</script>
+</html>
